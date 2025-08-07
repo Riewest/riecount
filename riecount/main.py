@@ -5,6 +5,8 @@ from fastapi import FastAPI, Query
 from threading import Lock
 import os
 import json
+from pydantic import BaseModel
+from typing import Dict
 
 # === Config ===
 DEFAULT_NAME = "default-counter"
@@ -53,26 +55,38 @@ def write_all_counters(data: dict):
     with open(COUNTER_FILE, "w") as f:
         json.dump(data, f)
 
+# === Response Models ===
+
+class HealthCheckResponse(BaseModel):
+    status: str
+
+class CounterResponse(BaseModel):
+    name: str
+    count: int
+
+class AllCountersResponse(BaseModel):
+    counters: Dict[str, int]
+
 # === API Endpoints ===
 
-@app.get("/health")
+@app.get("/health", response_model=HealthCheckResponse)
 def health_check():
     return {"status": "ok"}
 
-@app.get("/")
+@app.get("/", response_model=AllCountersResponse)
 def get_all_counters():
     with lock:
         data = read_all_counters()
-    return data
+    return {"counters": data}
 
-@app.get("/get_count")
+@app.get("/get_count", response_model=CounterResponse)
 def get_count(name: str = Query(DEFAULT_NAME)):
     with lock:
         data = read_all_counters()
         count = data.get(name, 0)
     return {"name": name, "count": count}
 
-@app.post("/count")
+@app.post("/count", response_model=CounterResponse)
 def increment_count(name: str = Query(DEFAULT_NAME)):
     with lock:
         data = read_all_counters()
