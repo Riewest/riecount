@@ -1,0 +1,10 @@
+services:
+  riecount:
+    image: ghcr.io/riewest/riecount:latest
+    container_name: riecount
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      # Change ./data to a persistent volume on your host
+      - ./data:/data
