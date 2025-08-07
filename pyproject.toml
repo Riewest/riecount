@@ -1,0 +1,8 @@
+[project]
+name = "riecount"
+version = "0.1.0"
+description = "A simple FastAPI-based counter with named support"
+dependencies = [
+    "fastapi",
+    "uvicorn"
+]
