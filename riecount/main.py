@@ -2,6 +2,7 @@ import logging
 import sys
 import uvicorn
 from fastapi import FastAPI, Query
+from fastapi.responses import HTMLResponse
 from threading import Lock
 import os
 import json
@@ -73,7 +74,7 @@ class AllCountersResponse(BaseModel):
 def health_check():
     return {"status": "ok"}
 
-@app.get("/", response_model=AllCountersResponse)
+@app.get("/get_all", response_model=AllCountersResponse)
 def get_all_counters():
     with lock:
         data = read_all_counters()
@@ -95,3 +96,88 @@ def increment_count(name: str = Query(DEFAULT_NAME)):
         write_all_counters(data)
     logger.info(f"Incremented counter '{name}' to {count}")
     return {"name": name, "count": count}
+
+
+@app.get("/", response_class=HTMLResponse)
+def homepage():
+    with lock:
+        data = read_all_counters()
+    # Generate HTML for the table
+    table_rows = "".join(
+        f"<tr><td>{name}</td><td>{count}</td></tr>" for name, count in data.items()
+    )
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Counter Dashboard</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                margin: 20px;
+                padding: 0;
+                background-color: #f4f4f9;
+            }}
+            table {{
+                width: 50%;
+                border-collapse: collapse;
+                margin: 20px auto;
+                background-color: #fff;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            }}
+            th, td {{
+                padding: 10px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+            }}
+            th {{
+                background-color: #f2f2f2;
+            }}
+            tr:hover {{
+                background-color: #f9f9f9;
+            }}
+            h1 {{
+                text-align: center;
+                color: #333;
+            }}
+            .buttons {{
+                text-align: center;
+                margin-top: 20px;
+            }}
+            .buttons a {{
+                display: inline-block;
+                padding: 10px 20px;
+                margin: 5px;
+                font-size: 16px;
+                color: #fff;
+                background-color: #007BFF;
+                text-decoration: none;
+                border-radius: 5px;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            }}
+            .buttons a:hover {{
+                background-color: #0056b3;
+            }}
+        </style>
+    </head>
+    <body>
+        <h1>Counter Dashboard</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Counter Name</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                {table_rows}
+            </tbody>
+        </table>
+        <div class="buttons">
+            <a href="/docs" target="_blank">Swagger UI</a>
+            <a href="/redoc" target="_blank">ReDoc</a>
+        </div>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
